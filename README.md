@@ -11,3 +11,7 @@ Potrebno je implementirati:
 3. Grafičku reprezentaciju rezultata algoritma
 
 
+### Biblioteke:
+* PyQt - GUI
+* numpy - efikasna izračunavanja nad nizovima
+* sci-pi - za neke metode linearne algebre neophodne u algoritmu
