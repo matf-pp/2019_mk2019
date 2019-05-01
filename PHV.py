@@ -24,8 +24,8 @@ class PlotCanvas(FigureCanvas):
     def __init__(self, parent=None, width=5, height=5, dpi=100):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.fig.set_facecolor('cornflowerblue')
-        self.ax = self.fig.add_subplot(211)
-        self.ay = self.fig.add_subplot(212)
+        self.ax = self.fig.add_subplot(121)
+        self.ay = self.fig.add_subplot(122)
         FigureCanvas.__init__(self, self.fig)
         self.setParent(parent)
         FigureCanvas.setSizePolicy(
@@ -88,10 +88,11 @@ class PlotCanvas(FigureCanvas):
             yticks.append(self.num)
             self.ay.axes.set_yticks(yticks)
             for(a, b) in niz:
-                self.ay.fill([b.birth, b.birth, min(b.death, 1.42), min(b.death, 1.42)], [
-                             self.num, self.num+1, self.num+1, self.num], alpha=0.9)
-                # self.ay.plot([b.birth,min(b.death,1.42)],[self.num,self.num],"blue")
-                self.num = self.num + 1
+                if a != 2:
+                    self.ay.fill([b.birth, b.birth, min(b.death, 1.42), min(b.death, 1.42)], [
+                                self.num, self.num+1, self.num+1, self.num], alpha=0.9)
+                    # self.ay.plot([b.birth,min(b.death,1.42)],[self.num,self.num],"blue")
+                    self.num = self.num + 1
         linije = self.ay.plot([epsilon, epsilon], [0, self.num], "black")
         self.linija_epsilon = linije.pop()
 
