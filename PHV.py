@@ -11,20 +11,36 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from persistence import *
 import qdarkstyle
-numOfDots = 0
-epsilon = 0
-dgms = []
 
 
 class DrawingData:
-    def __init__(self, dots = [], lines = [], triangles = []):
+    def __init__(self, dots = [], lines = [], triangles = [], dgms = []):
         self.dots = dots
         self.lines = lines
         self.triangles = triangles
-    
+        self.diagrams = dgms
+        self.epsilon = 0
+        self.max_distance = 1.42
+
+    def recalculateDrawingData(self, newNumOfDots):
+        self.__changeNumberOfDots(newNumOfDots)
+
+        self.lines.clear()
+        self.lines = calculateLines(self.dots)
+
+        self.triangles.clear()
+        self.triangles = calculateTriangles(self.dots)
+
+
+    def __changeNumberOfDots(self, newNumOfDots):
+        if (newNumOfDots > len(self.dots)):
+            self.dots.extend(generateNRandomDots(newNumOfDots - len(self.dots)))
+
+        if (newNumOfDots < len(self.dots)):
+            for i in range(len(self.dots) - newNumOfDots):
+                self.dots.pop()
 
 drawingData = DrawingData()
-
 
 
 class PlotCanvas(FigureCanvas):
@@ -43,8 +59,6 @@ class PlotCanvas(FigureCanvas):
         FigureCanvas.updateGeometry(self)
 
     def plot(self):
-        global epsilon
-        global dgms
 
         self.ax.set_facecolor('lightgray')
         self.ax.clear()
@@ -53,9 +67,9 @@ class PlotCanvas(FigureCanvas):
 
         nizTrouglovaZaPresek = []
         for((x1, y1), (x2, y2), (x3, y3)) in self.data.triangles:
-            if ((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1) <= epsilon*epsilon and
-                (x3-x1)*(x3-x1)+(y3-y1)*(y3-y1) <= epsilon*epsilon and
-                    (x2-x3)*(x2-x3)+(y2-y3)*(y2-y3) <= epsilon*epsilon):
+            if ((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1) <= drawingData.epsilon*drawingData.epsilon and
+                (x3-x1)*(x3-x1)+(y3-y1)*(y3-y1) <= drawingData.epsilon*drawingData.epsilon and
+                    (x2-x3)*(x2-x3)+(y2-y3)*(y2-y3) <= drawingData.epsilon*drawingData.epsilon):
 
                 trougao = Polygon([(x1, y1), (x2, y2), (x3, y3)])
                 nizTrouglovaZaPresek.append(trougao)
@@ -70,20 +84,18 @@ class PlotCanvas(FigureCanvas):
                 self.ax.fill(x, y, alpha=0.5)
 
         for ((x1, y1), (x2, y2)) in self.data.lines:
-            if((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1) <= epsilon*epsilon):
+            if((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1) <= drawingData.epsilon*drawingData.epsilon):
                 self.ax.plot([x1, x2], [y1, y2], "black")
 
         for (x, y) in self.data.dots:
             self.ax.plot([x], [y], 'bo')  # crta tačke
         self.linija_epsilon.remove()
-        linije = self.ay.plot([epsilon, epsilon], [0, self.num], "black")
+        linije = self.ay.plot([drawingData.epsilon, drawingData.epsilon], [0, self.num], "black")
         self.linija_epsilon = linije.pop()
 
         self.draw()
 
     def barCode(self):
-        global epsilon
-        global dgms
         self.ay.clear()
         self.ay.set_facecolor('lightgray')
         self.num = 0
@@ -92,7 +104,7 @@ class PlotCanvas(FigureCanvas):
         self.ay.axes.set_yticks([])
         self.ay.set_yticklabels(["H0          ", "H1     ", "H2"])
         yticks = []
-        for niz in ([[(i, p) for p in dgm] for i, dgm in enumerate(dgms)]):
+        for niz in ([[(i, p) for p in dgm] for i, dgm in enumerate(drawingData.diagrams)]):
 
             self.ay.plot([0, 1.42], [self.num, self.num], "black")
             yticks.append(self.num)
@@ -103,60 +115,59 @@ class PlotCanvas(FigureCanvas):
                                 self.num, self.num+1, self.num+1, self.num], alpha=0.9)
                     # self.ay.plot([b.birth,min(b.death,1.42)],[self.num,self.num],"blue")
                     self.num = self.num + 1
-        linije = self.ay.plot([epsilon, epsilon], [0, self.num], "black")
+        linije = self.ay.plot([drawingData.epsilon, drawingData.epsilon], [0, self.num], "black")
         self.linija_epsilon = linije.pop()
 
         self.draw()
 
 
-class Window(QWidget):
+def generateNRandomDots(n):
+    return [(random.random(), random.random()) for _ in range(n)]
 
-    def generisiSkupTacaka(self, newNumOfDots):
-        global numOfDots
-        global drawingData
-        global epsilon
-        global dgms
-        if(newNumOfDots > numOfDots):
-            for i in range(newNumOfDots-numOfDots):
-                drawingData.dots.append((random.random(), random.random()))
-        if(newNumOfDots < numOfDots):
-            for i in range(numOfDots - newNumOfDots):
-                drawingData.dots.pop()
-        numOfDots = newNumOfDots
-        drawingData.lines = []
-        for i in range(numOfDots):
-            for j in range(numOfDots):
-                if i != j:
-                    drawingData.lines.append(
-                        (drawingData.dots[i], drawingData.dots[j]))
-        drawingData.triangles = []
-        for i in range(numOfDots):
-            for j in range(numOfDots):
-                for k in range(numOfDots):
-                    if i != j and j != k and k != i:
-                        drawingData.triangles.append(
-                            (drawingData.dots[i], drawingData.dots[j], drawingData.dots[k]))
+def calculateLines(dots):
+    lines = []
+    for i in range(len(dots)):
+        for j in range(len(dots)):
+            if i != j:
+                lines.append(
+                    (dots[i], dots[j]))
+    return lines
+
+def calculateTriangles(dots):
+    triangles = []
+    for i in range(len(dots)):
+        for j in range(len(dots)):
+            for k in range(len(dots)):
+                if i != j and j != k and k != i:
+                    triangles.append(
+                        (dots[i], dots[j], dots[k]))
+    return triangles
+
+
+class Window(QWidget):
+    def onEpsilonChanged(self, num):
+        drawingData.epsilon = num/1000.0
+        self.textBoxEpsilon.setText(str(drawingData.epsilon))
+        self.canvas.plot()
+
+    def onNumberOfDotsChanged(self, num):
+        self.textBoxNumOfDots.setText(str(num))
+
+        drawingData.recalculateDrawingData(num)
 
         vrc = VietorisRipsComplex(
             list_of_pairs_to_numpyarray(drawingData.dots))
 
-        dgms = vrc.compute_persistence(1.42)
+        drawingData.diagrams = vrc.compute_persistence(drawingData.max_distance)
 
         self.canvas.setData(drawingData)
+
         self.canvas.barCode()
+
         self.canvas.plot()
 
-    def promeniEpsilon(self, num):
-        global epsilon
-        epsilon = num/1000.0
-        self.textBoxEpsilon.setText(str(epsilon))
-        self.canvas.plot()
 
-    def promeniNumOfDots(self, num):
-        self.textBoxNumOfDots.setText(str(num))
-        self.generisiSkupTacaka(num)
-
-    def promeniTextBoxEpsilon(self, string):
+    def onTextBoxEpsilonChanged(self, string):
         try:
             a = float(string)
             if(a >= 0 and a <= 1.42):
@@ -164,7 +175,7 @@ class Window(QWidget):
         except:
             return
 
-    def promeniTextBoxNumOfDots(self, string):
+    def onTextBoxNumOfDotsChanged(self, string):
         try:
             a = float(string)
             if(a >= 0 and a <= 30):
@@ -216,11 +227,11 @@ class Window(QWidget):
         self.canvas.plot()
 
         # Eventovi:
-        self.sliderNumDots.valueChanged.connect(self.promeniNumOfDots)
-        self.sliderEpsilon.valueChanged.connect(self.promeniEpsilon)
+        self.sliderNumDots.valueChanged.connect(self.onNumberOfDotsChanged)
+        self.sliderEpsilon.valueChanged.connect(self.onEpsilonChanged)
 
-        self.textBoxEpsilon.textEdited.connect(self.promeniTextBoxEpsilon)
-        self.textBoxNumOfDots.textEdited.connect(self.promeniTextBoxNumOfDots)
+        self.textBoxEpsilon.textEdited.connect(self.onTextBoxEpsilonChanged)
+        self.textBoxNumOfDots.textEdited.connect(self.onTextBoxNumOfDotsChanged)
 
         self.CheckBox.stateChanged.connect(self.changeTheme)
         self.Labela = QLabel("Kristina Popović & Marko Spasić, 2019")
