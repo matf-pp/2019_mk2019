@@ -13,8 +13,18 @@ from persistence import *
 import qdarkstyle
 numOfDots = 0
 epsilon = 0
-skupTacaka = {"tacke": [], "duzi": [], "trouglovi": []}
 dgms = []
+
+
+class DrawingData:
+    def __init__(self, dots = [], lines = [], triangles = []):
+        self.dots = dots
+        self.lines = lines
+        self.triangles = triangles
+    
+
+drawingData = DrawingData()
+
 
 
 class PlotCanvas(FigureCanvas):
@@ -42,7 +52,7 @@ class PlotCanvas(FigureCanvas):
         self.ax.set_ylim([0, 1])
 
         nizTrouglovaZaPresek = []
-        for((x1, y1), (x2, y2), (x3, y3)) in self.data["trouglovi"]:
+        for((x1, y1), (x2, y2), (x3, y3)) in self.data.triangles:
             if ((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1) <= epsilon*epsilon and
                 (x3-x1)*(x3-x1)+(y3-y1)*(y3-y1) <= epsilon*epsilon and
                     (x2-x3)*(x2-x3)+(y2-y3)*(y2-y3) <= epsilon*epsilon):
@@ -59,11 +69,11 @@ class PlotCanvas(FigureCanvas):
                 x, y = i.exterior.coords.xy
                 self.ax.fill(x, y, alpha=0.5)
 
-        for ((x1, y1), (x2, y2)) in self.data["duzi"]:
+        for ((x1, y1), (x2, y2)) in self.data.lines:
             if((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1) <= epsilon*epsilon):
                 self.ax.plot([x1, x2], [y1, y2], "black")
 
-        for (x, y) in self.data["tacke"]:
+        for (x, y) in self.data.dots:
             self.ax.plot([x], [y], 'bo')  # crta tačke
         self.linija_epsilon.remove()
         linije = self.ay.plot([epsilon, epsilon], [0, self.num], "black")
@@ -103,36 +113,36 @@ class Window(QWidget):
 
     def generisiSkupTacaka(self, newNumOfDots):
         global numOfDots
-        global skupTacaka
+        global drawingData
         global epsilon
         global dgms
         if(newNumOfDots > numOfDots):
             for i in range(newNumOfDots-numOfDots):
-                skupTacaka["tacke"].append((random.random(), random.random()))
+                drawingData.dots.append((random.random(), random.random()))
         if(newNumOfDots < numOfDots):
             for i in range(numOfDots - newNumOfDots):
-                skupTacaka["tacke"].pop()
+                drawingData.dots.pop()
         numOfDots = newNumOfDots
-        skupTacaka["duzi"] = []
+        drawingData.lines = []
         for i in range(numOfDots):
             for j in range(numOfDots):
                 if i != j:
-                    skupTacaka["duzi"].append(
-                        (skupTacaka["tacke"][i], skupTacaka["tacke"][j]))
-        skupTacaka["trouglovi"] = []
+                    drawingData.lines.append(
+                        (drawingData.dots[i], drawingData.dots[j]))
+        drawingData.triangles = []
         for i in range(numOfDots):
             for j in range(numOfDots):
                 for k in range(numOfDots):
                     if i != j and j != k and k != i:
-                        skupTacaka["trouglovi"].append(
-                            (skupTacaka["tacke"][i], skupTacaka["tacke"][j], skupTacaka["tacke"][k]))
+                        drawingData.triangles.append(
+                            (drawingData.dots[i], drawingData.dots[j], drawingData.dots[k]))
 
         vrc = VietorisRipsComplex(
-            list_of_pairs_to_numpyarray(skupTacaka["tacke"]))
+            list_of_pairs_to_numpyarray(drawingData.dots))
 
         dgms = vrc.compute_persistence(1.42)
 
-        self.canvas.setData(skupTacaka)
+        self.canvas.setData(drawingData)
         self.canvas.barCode()
         self.canvas.plot()
 
@@ -201,7 +211,7 @@ class Window(QWidget):
         self.CheckBox = QCheckBox("Pređi na \ntamnu stranu")
 
         self.canvas = PlotCanvas(self, width=1, height=1)
-        self.canvas.setData(skupTacaka)
+        self.canvas.setData(drawingData)
         self.canvas.barCode()
         self.canvas.plot()
 
