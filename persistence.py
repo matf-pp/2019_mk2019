@@ -5,22 +5,43 @@ import dionysus as d
 
 
 def list_of_pairs_to_numpyarray(list):
+    '''
+    :param list:
+    :return:
+    '''
     return np.array([[x,y] for (x,y) in list])
 
-
 class VietorisRipsComplex:
+    '''
+
+    '''
     def __init__(self, points, degree = 2):
+        '''
+
+        :param points:
+        :param degree:
+        '''
         self.points = points
         self.degree = degree
     
     def compute_persistence(self, max_epsilon):
-        f = d.fill_rips(self.points, 2, max_epsilon)
-        f.sort()
-        m = d.homology_persistence(f, prime = 2)
-        dgms = d.init_diagrams(m, f)
-        # print([s for s in f])
-        # print([[(i,p) for p in dgm] for i, dgm in enumerate(dgms)])
-        # d.plot.plot_bars(dgms[0], show = True)
-        return dgms
+        '''
+
+        :param max_epsilon:
+        :return:
+        '''
+        filtration = d.fill_rips(self.points, self.degree, max_epsilon)
+        filtration.sort()
+        matrix = d.homology_persistence(filtration, prime = 2)
+        diagrams = d.init_diagrams(matrix, filtration)
+        return diagrams
+    
+    def betti_number(self, i):
+        '''
+
+        :param i:
+        :return:
+        '''
+        pass
             
 

@@ -1,56 +1,127 @@
 import sys
 import random
-from PyQt5 import QtGui
-import numpy
 from shapely.geometry import Polygon
 from shapely.ops import cascaded_union
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import *
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
 from persistence import *
 import qdarkstyle
-numOfDots = 0
-epsilon = 0
-skupTacaka = {"tacke": [], "duzi": [], "trouglovi": []}
-dgms = []
+
+
+class DrawingData:
+    '''
+
+    '''
+    def __init__(self):
+        '''
+
+        :param dots:
+        :param lines:
+        :param triangles:
+        :param dgms:
+        '''
+        self.dots = []
+        self.lines = []
+        self.triangles = []
+        self.diagrams = []
+        self.epsilon = 0
+        self.max_distance = 1.42
+
+    def recalculateDrawingData(self, newNumOfDots):
+        '''
+
+        :param newNumOfDots:
+        :return:
+        '''
+        self.__changeNumberOfDots(newNumOfDots)
+
+        self.lines.clear()
+        self.lines = calculateLines(self.dots)
+
+        self.triangles.clear()
+        self.triangles = calculateTriangles(self.dots)
+
+
+    def __changeNumberOfDots(self, newNumOfDots):
+        '''
+
+        :param newNumOfDots:
+        :return:
+        '''
+        if (newNumOfDots > len(self.dots)):
+            self.dots.extend(generateNRandomDots(newNumOfDots - len(self.dots)))
+
+        if (newNumOfDots < len(self.dots)):
+            for i in range(len(self.dots) - newNumOfDots):
+                self.dots.pop()
+
+drawingData = DrawingData()
+
+
+def constructPolygons(triangles):
+    '''
+
+    :param triangles:
+    :return:
+    '''
+    trianglesIntersection = []
+    for ((x1, y1), (x2, y2), (x3, y3)) in triangles:
+        if ((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1) <= drawingData.epsilon * drawingData.epsilon and
+                (x3 - x1) * (x3 - x1) + (y3 - y1) * (y3 - y1) <= drawingData.epsilon * drawingData.epsilon and
+                (x2 - x3) * (x2 - x3) + (y2 - y3) * (y2 - y3) <= drawingData.epsilon * drawingData.epsilon):
+            triangle = Polygon([(x1, y1), (x2, y2), (x3, y3)])
+            trianglesIntersection.append(triangle)
+    return trianglesIntersection
 
 
 class PlotCanvas(FigureCanvas):
-    def setData(self, arg):
+    '''
+
+    '''
+    def setDrawingData(self, arg):
+        '''
+
+        :param arg:
+        :return:
+        '''
         self.data = arg
 
     def __init__(self, parent=None, width=5, height=5, dpi=100):
+        '''
+
+        :param parent:
+        :param width:
+        :param height:
+        :param dpi:
+        '''
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.fig.set_facecolor('cornflowerblue')
-        self.ax = self.fig.add_subplot(211)
-        self.ay = self.fig.add_subplot(212)
+        self.ax = self.fig.add_subplot(121)
+        self.ay = self.fig.add_subplot(122)
         FigureCanvas.__init__(self, self.fig)
         self.setParent(parent)
         FigureCanvas.setSizePolicy(
             self, QSizePolicy.Expanding, QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
 
-    def plot(self):
-        global epsilon
-        global dgms
 
+    def plot(self):
+        '''
+
+        :return:
+        '''
         self.ax.set_facecolor('lightgray')
         self.ax.clear()
         self.ax.set_xlim([0, 1])
         self.ax.set_ylim([0, 1])
 
-        nizTrouglovaZaPresek = []
-        for((x1, y1), (x2, y2), (x3, y3)) in self.data["trouglovi"]:
-            if ((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1) <= epsilon*epsilon and
-                (x3-x1)*(x3-x1)+(y3-y1)*(y3-y1) <= epsilon*epsilon and
-                    (x2-x3)*(x2-x3)+(y2-y3)*(y2-y3) <= epsilon*epsilon):
+        triangleIntersectionArray = constructPolygons(drawingData.triangles)
 
-                trougao = Polygon([(x1, y1), (x2, y2), (x3, y3)])
-                nizTrouglovaZaPresek.append(trougao)
+        multiPoligon = cascaded_union(triangleIntersectionArray)
 
-        multiPoligon = cascaded_union(nizTrouglovaZaPresek)
+        # plot triangles
         if isinstance(multiPoligon, Polygon):
             x, y = multiPoligon.exterior.coords.xy
             self.ax.fill(x, y, alpha=0.5)
@@ -59,93 +130,127 @@ class PlotCanvas(FigureCanvas):
                 x, y = i.exterior.coords.xy
                 self.ax.fill(x, y, alpha=0.5)
 
-        for ((x1, y1), (x2, y2)) in self.data["duzi"]:
-            if((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1) <= epsilon*epsilon):
+        # plot lines
+        for ((x1, y1), (x2, y2)) in self.data.lines:
+            if((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1) <= drawingData.epsilon*drawingData.epsilon):
                 self.ax.plot([x1, x2], [y1, y2], "black")
 
-        for (x, y) in self.data["tacke"]:
-            self.ax.plot([x], [y], 'bo')  # crta tačke
-        self.linija_epsilon.remove()
-        linije = self.ay.plot([epsilon, epsilon], [0, self.num], "black")
-        self.linija_epsilon = linije.pop()
+        # plot dots
+        for (x, y) in self.data.dots:
+            self.ax.plot([x], [y], 'bo')
+
+        self.epsilon_line.remove()
+
+        lines = self.ay.plot([drawingData.epsilon, drawingData.epsilon], [0, self.num], "black")
+
+        self.epsilon_line = lines.pop()
 
         self.draw()
 
     def barCode(self):
-        global epsilon
-        global dgms
+        '''
+
+        :return:
+        '''
         self.ay.clear()
         self.ay.set_facecolor('lightgray')
         self.num = 0
-        h = 0
         self.ay.set_xlim([0,1.42])
         self.ay.axes.set_yticks([])
         self.ay.set_yticklabels(["H0          ", "H1     ", "H2"])
         yticks = []
-        for niz in ([[(i, p) for p in dgm] for i, dgm in enumerate(dgms)]):
-
+        for homology in ([[(i, p) for p in dgm] for i, dgm in enumerate(drawingData.diagrams)]):
             self.ay.plot([0, 1.42], [self.num, self.num], "black")
             yticks.append(self.num)
             self.ay.axes.set_yticks(yticks)
-            for(a, b) in niz:
-                self.ay.fill([b.birth, b.birth, min(b.death, 1.42), min(b.death, 1.42)], [
-                             self.num, self.num+1, self.num+1, self.num], alpha=0.9)
-                # self.ay.plot([b.birth,min(b.death,1.42)],[self.num,self.num],"blue")
+            homology = filter(lambda x: x[0] != 2, homology)
+            for(_, b) in homology:
+                self.ay.fill([b.birth, b.birth, min(b.death, drawingData.max_distance), min(b.death, drawingData.max_distance)], [
+                            self.num, self.num+1, self.num+1, self.num], alpha=0.9)
                 self.num = self.num + 1
-        linije = self.ay.plot([epsilon, epsilon], [0, self.num], "black")
-        self.linija_epsilon = linije.pop()
+
+        lines = self.ay.plot([drawingData.epsilon, drawingData.epsilon], [0, self.num], "black")
+
+        self.epsilon_line = lines.pop()
 
         self.draw()
 
 
-class Window(QWidget):
+def generateNRandomDots(n):
+    return [(random.random(), random.random()) for _ in range(n)]
 
-    def generisiSkupTacaka(self, newNumOfDots):
-        global numOfDots
-        global skupTacaka
-        global epsilon
-        global dgms
-        if(newNumOfDots > numOfDots):
-            for i in range(newNumOfDots-numOfDots):
-                skupTacaka["tacke"].append((random.random(), random.random()))
-        if(newNumOfDots < numOfDots):
-            for i in range(numOfDots - newNumOfDots):
-                skupTacaka["tacke"].pop()
-        numOfDots = newNumOfDots
-        skupTacaka["duzi"] = []
-        for i in range(numOfDots):
-            for j in range(numOfDots):
-                if i != j:
-                    skupTacaka["duzi"].append(
-                        (skupTacaka["tacke"][i], skupTacaka["tacke"][j]))
-        skupTacaka["trouglovi"] = []
-        for i in range(numOfDots):
-            for j in range(numOfDots):
-                for k in range(numOfDots):
-                    if i != j and j != k and k != i:
-                        skupTacaka["trouglovi"].append(
-                            (skupTacaka["tacke"][i], skupTacaka["tacke"][j], skupTacaka["tacke"][k]))
+def calculateLines(dots):
+    '''
+
+    :param dots:
+    :return:
+    '''
+    lines = []
+    for i in range(len(dots)):
+        for j in range(len(dots)):
+            if i != j:
+                lines.append(
+                    (dots[i], dots[j]))
+    return lines
+
+def calculateTriangles(dots):
+    '''
+
+    :param dots:
+    :return:
+    '''
+    triangles = []
+    for i in range(len(dots)):
+        for j in range(len(dots)):
+            for k in range(len(dots)):
+                if i != j and j != k and k != i:
+                    triangles.append(
+                        (dots[i], dots[j], dots[k]))
+    return triangles
+
+
+class Window(QWidget):
+    '''
+
+    '''
+    def onEpsilonChanged(self, num):
+        '''
+
+        :param num:
+        :return:
+        '''
+        drawingData.epsilon = num/1000.0
+        self.textBoxEpsilon.setText(str(drawingData.epsilon))
+        self.canvas.plot()
+
+    def onNumberOfDotsChanged(self, num):
+        '''
+
+        :param num:
+        :return:
+        '''
+        self.textBoxNumOfDots.setText(str(num))
+
+        drawingData.recalculateDrawingData(num)
 
         vrc = VietorisRipsComplex(
-            list_of_pairs_to_numpyarray(skupTacaka["tacke"]))
+            list_of_pairs_to_numpyarray(drawingData.dots))
 
-        dgms = vrc.compute_persistence(1.42)
+        drawingData.diagrams = vrc.compute_persistence(drawingData.max_distance)
 
-        self.canvas.setData(skupTacaka)
+        self.canvas.setDrawingData(drawingData)
+
         self.canvas.barCode()
+
         self.canvas.plot()
 
-    def promeniEpsilon(self, num):
-        global epsilon
-        epsilon = num/1000.0
-        self.textBoxEpsilon.setText(str(epsilon))
-        self.canvas.plot()
 
-    def promeniNumOfDots(self, num):
-        self.textBoxNumOfDots.setText(str(num))
-        self.generisiSkupTacaka(num)
+    def onTextBoxEpsilonChanged(self, string):
+        '''
 
-    def promeniTextBoxEpsilon(self, string):
+        :param string:
+        :return:
+        '''
         try:
             a = float(string)
             if(a >= 0 and a <= 1.42):
@@ -153,7 +258,12 @@ class Window(QWidget):
         except:
             return
 
-    def promeniTextBoxNumOfDots(self, string):
+    def onTextBoxNumOfDotsChanged(self, string):
+        '''
+
+        :param string:
+        :return:
+        '''
         try:
             a = float(string)
             if(a >= 0 and a <= 30):
@@ -162,6 +272,10 @@ class Window(QWidget):
             return
 
     def changeTheme(self):
+        '''
+
+        :return:
+        '''
         global app
         if self.CheckBox.isChecked():
             app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
@@ -170,6 +284,10 @@ class Window(QWidget):
             app.setStyleSheet('')
 
     def __init__(self, parent=None):
+        '''
+
+        :param parent:
+        '''
 
         super(Window, self).__init__(parent)
         grid = QGridLayout()
@@ -200,16 +318,16 @@ class Window(QWidget):
         self.CheckBox = QCheckBox("Pređi na \ntamnu stranu")
 
         self.canvas = PlotCanvas(self, width=1, height=1)
-        self.canvas.setData(skupTacaka)
+        self.canvas.setDrawingData(drawingData)
         self.canvas.barCode()
         self.canvas.plot()
 
         # Eventovi:
-        self.sliderNumDots.valueChanged.connect(self.promeniNumOfDots)
-        self.sliderEpsilon.valueChanged.connect(self.promeniEpsilon)
+        self.sliderNumDots.valueChanged.connect(self.onNumberOfDotsChanged)
+        self.sliderEpsilon.valueChanged.connect(self.onEpsilonChanged)
 
-        self.textBoxEpsilon.textEdited.connect(self.promeniTextBoxEpsilon)
-        self.textBoxNumOfDots.textEdited.connect(self.promeniTextBoxNumOfDots)
+        self.textBoxEpsilon.textEdited.connect(self.onTextBoxEpsilonChanged)
+        self.textBoxNumOfDots.textEdited.connect(self.onTextBoxNumOfDotsChanged)
 
         self.CheckBox.stateChanged.connect(self.changeTheme)
         self.Labela = QLabel("Kristina Popović & Marko Spasić, 2019")
@@ -232,6 +350,10 @@ class Window(QWidget):
 
 
 def main():
+    '''
+
+    :return:
+    '''
     global app
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
