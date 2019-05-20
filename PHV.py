@@ -11,29 +11,31 @@ import qdarkstyle
 
 
 class DrawingData:
-    '''
 
-    '''
     def __init__(self):
-        '''
-
-        :param dots:
-        :param lines:
-        :param triangles:
-        :param dgms:
-        '''
         self.dots = []
         self.lines = []
         self.triangles = []
+
+        # diagrams that persistent homology will compute
         self.diagrams = []
+
+        # current value of epsilon
         self.epsilon = 0
+
+        # max distance for points in the 1x1 plane
         self.max_distance = 1.42
 
     def recalculateDrawingData(self, newNumOfDots):
         '''
-
+        Recalculates drawing data when the number of dots change.
+        When the newNumOfDots is greater than current number of dots than the number of new random dots
+        equal to the difference between newNumberOfDots and len(self.dots) is added and lines and triangles are
+        recalculated.
+        When the newNumberOfDots is less then the current number of dots than the extra dots are removed and
+        the lines and triangles are recalculated.
         :param newNumOfDots:
-        :return:
+        :return: None
         '''
         self.__changeNumberOfDots(newNumOfDots)
 
@@ -46,7 +48,7 @@ class DrawingData:
 
     def __changeNumberOfDots(self, newNumOfDots):
         '''
-
+        Helper method for recalculateDrawingData
         :param newNumOfDots:
         :return:
         '''
@@ -57,12 +59,13 @@ class DrawingData:
             for i in range(len(self.dots) - newNumOfDots):
                 self.dots.pop()
 
+
 drawingData = DrawingData()
 
 
 def constructPolygons(triangles):
     '''
-
+    Constructs polygons to be drawn by matplot
     :param triangles:
     :return:
     '''
@@ -77,20 +80,17 @@ def constructPolygons(triangles):
 
 
 class PlotCanvas(FigureCanvas):
-    '''
-
-    '''
     def setDrawingData(self, arg):
         '''
-
-        :param arg:
+        Sets arg to drawingData. This data (dots, lines, triangles) is latter drawn in self.plot
+        :param arg: type of DrawingData
         :return:
         '''
         self.data = arg
 
     def __init__(self, parent=None, width=5, height=5, dpi=100):
         '''
-
+        Initializes parameters for matplotlib
         :param parent:
         :param width:
         :param height:
@@ -109,8 +109,8 @@ class PlotCanvas(FigureCanvas):
 
     def plot(self):
         '''
-
-        :return:
+        Draws dots, lines, triangles in the left canvas.
+        :return: None
         '''
         self.ax.set_facecolor('lightgray')
         self.ax.clear()
@@ -149,7 +149,7 @@ class PlotCanvas(FigureCanvas):
 
     def barCode(self):
         '''
-
+        Draws the barcode in the right canvas.
         :return:
         '''
         self.ay.clear()
@@ -157,7 +157,7 @@ class PlotCanvas(FigureCanvas):
         self.num = 0
         self.ay.set_xlim([0,1.42])
         self.ay.axes.set_yticks([])
-        self.ay.set_yticklabels(["H0          ", "H1     ", "H2"])
+        self.ay.set_yticklabels(["H0          ", "H1     "])
         yticks = []
         for homology in ([[(i, p) for p in dgm] for i, dgm in enumerate(drawingData.diagrams)]):
             self.ay.plot([0, 1.42], [self.num, self.num], "black")
@@ -181,8 +181,8 @@ def generateNRandomDots(n):
 
 def calculateLines(dots):
     '''
-
-    :param dots:
+    Constructs all posible lines from list of 2d points
+    :param dots: list of 2d points
     :return:
     '''
     lines = []
@@ -195,7 +195,7 @@ def calculateLines(dots):
 
 def calculateTriangles(dots):
     '''
-
+    Constructs all possible triangles from list of 2d points
     :param dots:
     :return:
     '''
@@ -210,12 +210,10 @@ def calculateTriangles(dots):
 
 
 class Window(QWidget):
-    '''
 
-    '''
     def onEpsilonChanged(self, num):
         '''
-
+        Called when the user changes epsilon.
         :param num:
         :return:
         '''
@@ -225,8 +223,8 @@ class Window(QWidget):
 
     def onNumberOfDotsChanged(self, num):
         '''
-
-        :param num:
+        Called when the number of dots change. Recalculates and draws drawing data and persistence diagram.
+        :param num: new number of dots
         :return:
         '''
         self.textBoxNumOfDots.setText(str(num))
@@ -322,7 +320,7 @@ class Window(QWidget):
         self.canvas.barCode()
         self.canvas.plot()
 
-        # Eventovi:
+        # Register events:
         self.sliderNumDots.valueChanged.connect(self.onNumberOfDotsChanged)
         self.sliderEpsilon.valueChanged.connect(self.onEpsilonChanged)
 
@@ -350,10 +348,6 @@ class Window(QWidget):
 
 
 def main():
-    '''
-
-    :return:
-    '''
     global app
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
