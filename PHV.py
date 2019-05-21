@@ -284,7 +284,7 @@ class Window(QWidget):
         :return:
         '''
         global app
-        if self.CheckBox.isChecked():
+        if self.DarkThemeCheckBox.isChecked():
             app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
 
         else:
@@ -305,6 +305,12 @@ class Window(QWidget):
             self.canvas.barCode()
 
             self.canvas.plot()
+            
+            self.sliderNumDots.setDisabled(True)
+
+            self.textBoxNumOfDots.setDisabled(True)
+            
+
             # gui postavi broj tacaka, slider ...
         except IOError:
             pass
