@@ -10,7 +10,9 @@ from persistence import *
 import qdarkstyle
 import numpy as np
 import os
+
 import itertools
+
 class DrawingData:
 
     def __init__(self):
@@ -122,6 +124,8 @@ class PlotCanvas(FigureCanvas):
         self.ax.set_xlim([0, 1])
         self.ax.set_ylim([0, 1])
 
+
+        triangleIntersectionArray = constructTriangleArray(drawingData.triangles)
 
         multiPoligon = constructTriangleArray(drawingData.triangles)
 
@@ -311,6 +315,7 @@ class Window(QWidget):
 
         self.canvas.barCode()
 
+
     def onPlotCanvasClick(self, event):
         if self.canvas.ax == event.inaxes:
             drawingData.dots = np.append(drawingData.dots, [[float(event.xdata), float(event.ydata)]], axis=0)
@@ -323,6 +328,7 @@ class Window(QWidget):
             self.canvas.setDrawingData(drawingData)
             self.canvas.barCode()
             self.canvas.plot()
+
 
     def __init__(self, parent=None):
         '''
@@ -338,8 +344,10 @@ class Window(QWidget):
         #self.sliderNumDots = QSlider(Qt.Horizontal)
         self.sliderEpsilon = QSlider(Qt.Horizontal)
 
+
         #self.sliderNumDots.setMaximum(16)
         #self.sliderNumDots.setMinimum(0)
+
 
         self.sliderEpsilon.setMaximum(1420)
         self.sliderEpsilon.setMinimum(0)
@@ -381,9 +389,11 @@ class Window(QWidget):
         self.Labela = QLabel("Kristina Popović & Marko Spasić, 2019")
         grid.setContentsMargins(8, 8, 8, 8)
 
+
         #grid.addWidget(labelaNumDots, 0, 0)
         #grid.addWidget(self.sliderNumDots, 0, 1)
         #grid.addWidget(self.textBoxNumOfDots, 0, 1)
+
         grid.addWidget(self.Button, 0,3)
         grid.addWidget(self.H2CheckBox,1,3)
         grid.addWidget(labelaEpsilon, 1, 0)
