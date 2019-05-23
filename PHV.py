@@ -10,10 +10,13 @@ from persistence import *
 import qdarkstyle
 import numpy as np
 import os
+
+import itertools
+
 class DrawingData:
 
     def __init__(self):
-        self.dots = []
+        self.dots = np.empty([0,2])
         self.lines = []
         self.triangles = []
 
@@ -45,6 +48,8 @@ class DrawingData:
         self.triangles.clear()
         self.triangles = calculateTriangles(self.dots)
 
+        #print(self.lines)
+        #print(self.triangles)
 
     def changeNumberOfDots(self, newNumOfDots):
         '''
@@ -52,12 +57,10 @@ class DrawingData:
         :param newNumOfDots:
         :return:
         '''
-        if (newNumOfDots > len(self.dots)):
-            self.dots.extend(generateNRandomDots(newNumOfDots - len(self.dots)))
-
-        if (newNumOfDots < len(self.dots)):
-            for i in range(len(self.dots) - newNumOfDots):
-                self.dots.pop()
+        if (newNumOfDots > self.dots.shape[0]):
+            self.dots = np.concatenate(self.dots, np.random.rand(newNumOfDots - self.dots.shape[0], 2))
+        else:
+            self.dots = self.dots[:-self.dots.shape[0] - newNumOfDots]
 
 
 drawingData = DrawingData()
@@ -71,6 +74,7 @@ def constructTriangleArray(triangles):
     '''
     trianglesIntersection = []
     for ((x1, y1), (x2, y2), (x3, y3)) in triangles:
+        #print((x1, y1), (x2, y2), (x3, y3))
         if ((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1) <= drawingData.epsilon * drawingData.epsilon and
                 (x3 - x1) * (x3 - x1) + (y3 - y1) * (y3 - y1) <= drawingData.epsilon * drawingData.epsilon and
                 (x2 - x3) * (x2 - x3) + (y2 - y3) * (y2 - y3) <= drawingData.epsilon * drawingData.epsilon):
@@ -120,18 +124,19 @@ class PlotCanvas(FigureCanvas):
         self.ax.set_xlim([0, 1])
         self.ax.set_ylim([0, 1])
 
+
         triangleIntersectionArray = constructTriangleArray(drawingData.triangles)
 
-        multiPoligon = cascaded_union(triangleIntersectionArray)
+        multiPoligon = constructTriangleArray(drawingData.triangles)
 
         # plot triangles
         if isinstance(multiPoligon, Polygon):
             x, y = multiPoligon.exterior.coords.xy
-            self.ax.fill(x, y, alpha=0.5)
+            self.ax.fill(x, y, 'b', alpha=0.5,)
         else:
             for i in multiPoligon:
                 x, y = i.exterior.coords.xy
-                self.ax.fill(x, y, alpha=0.5)
+                self.ax.fill(x, y, 'b', alpha=0.5)
 
         # plot lines
         for ((x1, y1), (x2, y2)) in self.data.lines:
@@ -139,10 +144,12 @@ class PlotCanvas(FigureCanvas):
                 self.ax.plot([x1, x2], [y1, y2], "black")
 
         # plot dots
-        for (x, y) in self.data.dots:
-            self.ax.plot([x], [y], 'bo')
+        for dot in self.data.dots:
+            self.ax.plot([dot[0]], [dot[1]], 'bo')
 
         self.epsilon_line.remove()
+
+
 
         lines = self.ay.plot([drawingData.epsilon, drawingData.epsilon], [0, self.num], "black")
 
@@ -192,13 +199,7 @@ def calculateLines(dots):
     :param dots: list of 2d points
     :return:
     '''
-    lines = []
-    for i in range(len(dots)):
-        for j in range(len(dots)):
-            if i != j:
-                lines.append(
-                    (dots[i], dots[j]))
-    return lines
+    return list(itertools.combinations(dots, 2))
 
 def calculateTriangles(dots):
     '''
@@ -206,14 +207,8 @@ def calculateTriangles(dots):
     :param dots:
     :return:
     '''
-    triangles = []
-    for i in range(len(dots)):
-        for j in range(len(dots)):
-            for k in range(len(dots)):
-                if i != j and j != k and k != i:
-                    triangles.append(
-                        (dots[i], dots[j], dots[k]))
-    return triangles
+
+    return list(itertools.combinations(dots, 3))
 
 
 class Window(QWidget):
@@ -240,8 +235,7 @@ class Window(QWidget):
 
         drawingData.recalculateDrawingData()
 
-        vrc = VietorisRipsComplex(
-            list_of_pairs_to_numpyarray(drawingData.dots))
+        vrc = VietorisRipsComplex(drawingData.dots)
 
         drawingData.diagrams = vrc.compute_persistence(drawingData.max_distance)
 
@@ -321,6 +315,21 @@ class Window(QWidget):
 
         self.canvas.barCode()
 
+
+    def onPlotCanvasClick(self, event):
+        if self.canvas.ax == event.inaxes:
+            drawingData.dots = np.append(drawingData.dots, [[float(event.xdata), float(event.ydata)]], axis=0)
+            drawingData.recalculateDrawingData()
+
+            vrc = VietorisRipsComplex(drawingData.dots)
+
+            drawingData.diagrams = vrc.compute_persistence(drawingData.max_distance)
+
+            self.canvas.setDrawingData(drawingData)
+            self.canvas.barCode()
+            self.canvas.plot()
+
+
     def __init__(self, parent=None):
         '''
 
@@ -329,28 +338,30 @@ class Window(QWidget):
 
         super(Window, self).__init__(parent)
         grid = QGridLayout()
-        labelaNumDots = QLabel("Broj tačaka:")
+        #labelaNumDots = QLabel("Broj tačaka:")
         labelaEpsilon = QLabel("Epsilon:")
 
-        self.sliderNumDots = QSlider(Qt.Horizontal)
+        #self.sliderNumDots = QSlider(Qt.Horizontal)
         self.sliderEpsilon = QSlider(Qt.Horizontal)
 
-        self.sliderNumDots.setMaximum(16)
-        self.sliderNumDots.setMinimum(0)
+
+        #self.sliderNumDots.setMaximum(16)
+        #self.sliderNumDots.setMinimum(0)
+
 
         self.sliderEpsilon.setMaximum(1420)
         self.sliderEpsilon.setMinimum(0)
 
-        self.sliderNumDots.setSingleStep(1)
+        #self.sliderNumDots.setSingleStep(1)
         self.sliderEpsilon.setSingleStep(1)
 
-        self.textBoxNumOfDots = QLineEdit("0")
+        #self.textBoxNumOfDots = QLineEdit("0")
         self.textBoxEpsilon = QLineEdit("0")
 
         self.textBoxEpsilon.setMaximumWidth(50)
-        self.textBoxNumOfDots.setMaximumWidth(50)
+        #self.textBoxNumOfDots.setMaximumWidth(50)
 
-        self.textBoxNumOfDots.setMaxLength(3)
+        #self.textBoxNumOfDots.setMaxLength(3)
         self.textBoxEpsilon.setMaxLength(4)
 
         self.DarkThemeCheckBox = QCheckBox("Pređi na \ntamnu stranu")
@@ -364,21 +375,25 @@ class Window(QWidget):
         self.canvas.barCode()
         self.canvas.plot()
 
+        self.canvas.mpl_connect('button_press_event', self.onPlotCanvasClick)
+
         # Register events:
-        self.sliderNumDots.valueChanged.connect(self.onNumberOfDotsChanged)
+        #self.sliderNumDots.valueChanged.connect(self.onNumberOfDotsChanged)
         self.sliderEpsilon.valueChanged.connect(self.onEpsilonChanged)
 
         self.textBoxEpsilon.textEdited.connect(self.onTextBoxEpsilonChanged)
-        self.textBoxNumOfDots.textEdited.connect(self.onTextBoxNumOfDotsChanged)
+        #self.textBoxNumOfDots.textEdited.connect(self.onTextBoxNumOfDotsChanged)
 
         self.DarkThemeCheckBox.stateChanged.connect(self.changeTheme)
         self.H2CheckBox.stateChanged.connect(self.changeH2)
         self.Labela = QLabel("Kristina Popović & Marko Spasić, 2019")
         grid.setContentsMargins(8, 8, 8, 8)
 
-        grid.addWidget(labelaNumDots, 0, 0)
-        grid.addWidget(self.sliderNumDots, 0, 1)
-        grid.addWidget(self.textBoxNumOfDots, 0, 2)
+
+        #grid.addWidget(labelaNumDots, 0, 0)
+        #grid.addWidget(self.sliderNumDots, 0, 1)
+        #grid.addWidget(self.textBoxNumOfDots, 0, 1)
+
         grid.addWidget(self.Button, 0,3)
         grid.addWidget(self.H2CheckBox,1,3)
         grid.addWidget(labelaEpsilon, 1, 0)
