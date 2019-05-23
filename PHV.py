@@ -128,11 +128,11 @@ class PlotCanvas(FigureCanvas):
         # plot triangles
         if isinstance(multiPoligon, Polygon):
             x, y = multiPoligon.exterior.coords.xy
-            self.ax.fill(x, y, alpha=0.5)
+            self.ax.fill(x, y, 'b', alpha=0.5,)
         else:
             for i in multiPoligon:
                 x, y = i.exterior.coords.xy
-                self.ax.fill(x, y, alpha=0.5)
+                self.ax.fill(x, y, 'b', alpha=0.5)
 
         # plot lines
         for ((x1, y1), (x2, y2)) in self.data.lines:
