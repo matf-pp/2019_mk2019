@@ -244,7 +244,8 @@ class Window(QWidget):
         self.canvas.barCode()
 
         self.canvas.plot()
-
+    def onDeleteDotsButtonPressed(self):
+        print("OVDE ME DEFINISI, red 248")
 
     def onTextBoxEpsilonChanged(self, string):
         '''
@@ -370,6 +371,8 @@ class Window(QWidget):
         self.Button = QPushButton("Izaberi fajl sa tackama")
         self.Button.clicked.connect(self.onLoadFileButtonClick)
 
+        self.DeleteDotsButton = QPushButton("Izbriši tačke")
+
         self.canvas = PlotCanvas(self, width=1, height=1)
         self.canvas.setDrawingData(drawingData)
         self.canvas.barCode()
@@ -380,7 +383,7 @@ class Window(QWidget):
         # Register events:
         #self.sliderNumDots.valueChanged.connect(self.onNumberOfDotsChanged)
         self.sliderEpsilon.valueChanged.connect(self.onEpsilonChanged)
-
+        self.DeleteDotsButton.clicked.connect(self.onDeleteDotsButtonPressed)
         self.textBoxEpsilon.textEdited.connect(self.onTextBoxEpsilonChanged)
         #self.textBoxNumOfDots.textEdited.connect(self.onTextBoxNumOfDotsChanged)
 
@@ -394,14 +397,18 @@ class Window(QWidget):
         #grid.addWidget(self.sliderNumDots, 0, 1)
         #grid.addWidget(self.textBoxNumOfDots, 0, 1)
 
+        grid.addWidget(labelaEpsilon, 0, 0)
+        grid.addWidget(self.sliderEpsilon, 0, 1)
+
+        grid.addWidget(self.textBoxEpsilon, 0, 2)
         grid.addWidget(self.Button, 0,3)
-        grid.addWidget(self.H2CheckBox,1,3)
-        grid.addWidget(labelaEpsilon, 1, 0)
-        grid.addWidget(self.sliderEpsilon, 1, 1)
-        grid.addWidget(self.textBoxEpsilon, 1, 2)
-        grid.addWidget(self.canvas, 3, 0, 1, 4)
-        grid.addWidget(self.DarkThemeCheckBox, 4, 3)
-        grid.addWidget(self.Labela,4,0)
+        grid.addWidget(self.DeleteDotsButton, 0,4)
+        grid.addWidget(self.H2CheckBox,0,5)
+        grid.addWidget(self.canvas, 1, 0, 1,6)
+        
+        grid.addWidget(self.Labela,2,0)
+        grid.addWidget(self.DarkThemeCheckBox, 2, 5)
+        
 
         #grid.addWidget(self.createSlider("Random faktor"), 2, 0)
         self.setLayout(grid)
