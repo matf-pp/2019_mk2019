@@ -6,6 +6,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import *
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+from matplotlib.pyplot import Circle
 from persistence import *
 import qdarkstyle
 import numpy as np
@@ -30,6 +31,7 @@ class DrawingData:
         self.max_distance = 1.42
 
         self.drawH2 = False
+        self.showCircles = False
 
     def recalculateDrawingData(self):
         '''
@@ -43,24 +45,17 @@ class DrawingData:
         :return: None
         '''
         self.lines.clear()
-        self.lines = calculateLines(self.dots)
+        self.lines = list(itertools.combinations(self.dots, 2))
 
         self.triangles.clear()
-        self.triangles = calculateTriangles(self.dots)
+        self.triangles = list(itertools.combinations(self.dots, 3))
 
-        #print(self.lines)
-        #print(self.triangles)
+    def clear(self):
+        self.dots = np.empty([0,2])
+        self.lines.clear()
+        self.triangles.clear()
+        self.diagrams.clear()
 
-    def changeNumberOfDots(self, newNumOfDots):
-        '''
-        Helper method for recalculateDrawingData
-        :param newNumOfDots:
-        :return:
-        '''
-        if (newNumOfDots > self.dots.shape[0]):
-            self.dots = np.concatenate(self.dots, np.random.rand(newNumOfDots - self.dots.shape[0], 2))
-        else:
-            self.dots = self.dots[:-self.dots.shape[0] - newNumOfDots]
 
 
 drawingData = DrawingData()
@@ -124,9 +119,6 @@ class PlotCanvas(FigureCanvas):
         self.ax.set_xlim([0, 1])
         self.ax.set_ylim([0, 1])
 
-
-        triangleIntersectionArray = constructTriangleArray(drawingData.triangles)
-
         multiPoligon = constructTriangleArray(drawingData.triangles)
 
         # plot triangles
@@ -143,13 +135,16 @@ class PlotCanvas(FigureCanvas):
             if((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1) <= drawingData.epsilon*drawingData.epsilon):
                 self.ax.plot([x1, x2], [y1, y2], "black")
 
-        # plot dots
+        # plot dots and circles
         for dot in self.data.dots:
             self.ax.plot([dot[0]], [dot[1]], 'bo')
 
+        # plot circles
+        if drawingData.showCircles:
+            for dot in self.data.dots:
+                self.ax.add_artist(Circle((dot[0], dot[1]), drawingData.epsilon / 2, color='orange', fill=False, linewidth=3))
+
         self.epsilon_line.remove()
-
-
 
         lines = self.ay.plot([drawingData.epsilon, drawingData.epsilon], [0, self.num], "black")
 
@@ -189,28 +184,6 @@ class PlotCanvas(FigureCanvas):
 
         self.draw()
 
-
-def generateNRandomDots(n):
-    return [(random.random(), random.random()) for _ in range(n)]
-
-def calculateLines(dots):
-    '''
-    Constructs all posible lines from list of 2d points
-    :param dots: list of 2d points
-    :return:
-    '''
-    return list(itertools.combinations(dots, 2))
-
-def calculateTriangles(dots):
-    '''
-    Constructs all possible triangles from list of 2d points
-    :param dots:
-    :return:
-    '''
-
-    return list(itertools.combinations(dots, 3))
-
-
 class Window(QWidget):
 
     def onEpsilonChanged(self, num):
@@ -223,29 +196,10 @@ class Window(QWidget):
         self.textBoxEpsilon.setText(str(drawingData.epsilon))
         self.canvas.plot()
 
-    def onNumberOfDotsChanged(self, num):
-        '''
-        Called when the number of dots change. Recalculates and draws drawing data and persistence diagram.
-        :param num: new number of dots
-        :return:
-        '''
-        self.textBoxNumOfDots.setText(str(num))
-
-        drawingData.changeNumberOfDots(num)
-
-        drawingData.recalculateDrawingData()
-
-        vrc = VietorisRipsComplex(drawingData.dots)
-
-        drawingData.diagrams = vrc.compute_persistence(drawingData.max_distance)
-
-        self.canvas.setDrawingData(drawingData)
-
-        self.canvas.barCode()
-
-        self.canvas.plot()
     def onDeleteDotsButtonPressed(self):
-        print("OVDE ME DEFINISI, red 248")
+        drawingData.clear()
+        self.canvas.barCode()
+        self.canvas.plot()
 
     def onTextBoxEpsilonChanged(self, string):
         '''
@@ -300,13 +254,7 @@ class Window(QWidget):
             self.canvas.barCode()
 
             self.canvas.plot()
-            
-            self.sliderNumDots.setDisabled(True)
 
-            self.textBoxNumOfDots.setDisabled(True)
-            
-
-            # gui postavi broj tacaka, slider ...
         except IOError:
             pass
 
@@ -330,6 +278,10 @@ class Window(QWidget):
             self.canvas.barCode()
             self.canvas.plot()
 
+    def changeShowCircles(self):
+        drawingData.showCircles = self.ShowCirclesCheckBox.isChecked()
+
+        self.canvas.plot()
 
     def __init__(self, parent=None):
         '''
@@ -339,39 +291,31 @@ class Window(QWidget):
 
         super(Window, self).__init__(parent)
         grid = QGridLayout()
-        #labelaNumDots = QLabel("Broj tačaka:")
+
         labelaEpsilon = QLabel("Epsilon:")
 
-        #self.sliderNumDots = QSlider(Qt.Horizontal)
         self.sliderEpsilon = QSlider(Qt.Horizontal)
-
-
-        #self.sliderNumDots.setMaximum(16)
-        #self.sliderNumDots.setMinimum(0)
-
 
         self.sliderEpsilon.setMaximum(1420)
         self.sliderEpsilon.setMinimum(0)
 
-        #self.sliderNumDots.setSingleStep(1)
         self.sliderEpsilon.setSingleStep(1)
 
-        #self.textBoxNumOfDots = QLineEdit("0")
         self.textBoxEpsilon = QLineEdit("0")
 
         self.textBoxEpsilon.setMaximumWidth(50)
-        #self.textBoxNumOfDots.setMaximumWidth(50)
 
-        #self.textBoxNumOfDots.setMaxLength(3)
         self.textBoxEpsilon.setMaxLength(4)
 
-        self.DarkThemeCheckBox = QCheckBox("Pređi na \ntamnu stranu")
-        self.H2CheckBox = QCheckBox("Prikaži H2")
+        self.DarkThemeCheckBox = QCheckBox("Come to the dark side")
+        self.H2CheckBox = QCheckBox("Show H2")
+        self.ShowCirclesCheckBox = QCheckBox("Show Circles")
 
-        self.Button = QPushButton("Izaberi fajl sa tackama")
+
+        self.Button = QPushButton("Open file")
         self.Button.clicked.connect(self.onLoadFileButtonClick)
 
-        self.DeleteDotsButton = QPushButton("Izbriši tačke")
+        self.DeleteDotsButton = QPushButton("Clear")
 
         self.canvas = PlotCanvas(self, width=1, height=1)
         self.canvas.setDrawingData(drawingData)
@@ -381,21 +325,16 @@ class Window(QWidget):
         self.canvas.mpl_connect('button_press_event', self.onPlotCanvasClick)
 
         # Register events:
-        #self.sliderNumDots.valueChanged.connect(self.onNumberOfDotsChanged)
         self.sliderEpsilon.valueChanged.connect(self.onEpsilonChanged)
         self.DeleteDotsButton.clicked.connect(self.onDeleteDotsButtonPressed)
         self.textBoxEpsilon.textEdited.connect(self.onTextBoxEpsilonChanged)
-        #self.textBoxNumOfDots.textEdited.connect(self.onTextBoxNumOfDotsChanged)
 
         self.DarkThemeCheckBox.stateChanged.connect(self.changeTheme)
         self.H2CheckBox.stateChanged.connect(self.changeH2)
+        self.ShowCirclesCheckBox.stateChanged.connect(self.changeShowCircles)
+
         self.Labela = QLabel("Kristina Popović & Marko Spasić, 2019")
         grid.setContentsMargins(8, 8, 8, 8)
-
-
-        #grid.addWidget(labelaNumDots, 0, 0)
-        #grid.addWidget(self.sliderNumDots, 0, 1)
-        #grid.addWidget(self.textBoxNumOfDots, 0, 1)
 
         grid.addWidget(labelaEpsilon, 0, 0)
         grid.addWidget(self.sliderEpsilon, 0, 1)
@@ -404,15 +343,14 @@ class Window(QWidget):
         grid.addWidget(self.Button, 0,3)
         grid.addWidget(self.DeleteDotsButton, 0,4)
         grid.addWidget(self.H2CheckBox,0,5)
-        grid.addWidget(self.canvas, 1, 0, 1,6)
+        grid.addWidget(self.canvas, 1, 0, 1,7)
+        grid.addWidget(self.ShowCirclesCheckBox, 0,6)
         
         grid.addWidget(self.Labela,2,0)
-        grid.addWidget(self.DarkThemeCheckBox, 2, 5)
+        grid.addWidget(self.DarkThemeCheckBox, 2, 6)
         
-
-        #grid.addWidget(self.createSlider("Random faktor"), 2, 0)
         self.setLayout(grid)
-        self.setWindowTitle("Perzistentna homologija")
+        self.setWindowTitle("Persistent homology")
         self.resize(1490, 960)
 
 
@@ -421,8 +359,7 @@ def main():
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
     clock = Window()
-    clock.show()
-    #clock.showFullScreen()
+    clock.showMaximized()
     sys.exit(app.exec_())
 
 
