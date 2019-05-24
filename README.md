@@ -1,17 +1,19 @@
 # 2D Persistent Homology visualizer
 
-Za dati skup nasumično generisanih tačaka u Euklidskoj ravni izračunava
-homologiju stepena 0, koja opisuje povezanost tačaka, i homologiju stepena 1 koja detektuje rupe.
+![persistence](screenshots/2.png)
+![persistence](screenshots/3.png)
+
+Na levom plotu korisnik klikom miša postavlja tačke. Program za postavljenje tačke izračunava perzistentnu homologiju apstraktnog Ripsovog kompleksa paramterizovanog distancom epsilon koje se može promeniti preko slajdera na vrhu prozora.
 
 Sa leve strane prikazan je Viretoris-Rips complex koji se dobija za zadati parametar epsilon.
 
-Sa desne strane prikazan je generisan Barcode koje predstavlja diagram perzistencije gde je za svako epislon prikazan trenutak 'radjanja' i 'umiranja' komponente.
-
-![persistence](screenshots/1.png)
+Sa desne strane prikazan je generisan Barcode koje predstavlja diagram perzistencije gde je za svako epislon prikazan trenutak 'rađanja' i 'umiranja' komponente.
 
 ### Plan projekta
 
-Projekat je napravljen u programskom jeziku Python (3.7). Korišćene biblioteke:
+Projekat je napravljen u programskom jeziku Python (3.6)
+ 
+ Korišćene biblioteke:
 * [dionysus2](https://mrzv.org/software/dionysus2/) - od [Dmitriy Morozov](https://www.mrzv.org/). Za konstruisanje Vietoris–Rips Complexe-a od datog skupa tačaka, računanje persistentne homologije i generisanje diagrama persistencije.
 * [PyQt5](https://pypi.org/project/PyQt5/) - crtanje GUI-a
 * [matplotlib](https://matplotlib.org/) - iscrtavanje Vietoris-Rips Complex i dijagrama persistencije
