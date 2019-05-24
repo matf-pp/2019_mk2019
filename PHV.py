@@ -1,3 +1,5 @@
+# -*- coding: UTF-8 -*-
+
 import sys
 import random
 from shapely.geometry import Polygon
