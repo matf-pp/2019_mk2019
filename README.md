@@ -4,8 +4,8 @@ Persistentna homologija je algebarski metod za uočavanje topoloških osobina po
 korišćenjem persistentne homologije su: komponentne povezanosti, rupe, klasteri, struktura grafa, dok podaci mogu biti skup tačaka sa metrikom.
 
 
-![persistence](screenshots/2.png)
-![persistence](screenshots/3.png)
+![persistence](screenshots/4.png)
+![persistence](screenshots/5.png)
 
 Na levom plotu korisnik klikom miša postavlja tačke. Program za postavljenje tačke izračunava perzistentnu homologiju. 
 Prevlačenjem epsilon slajdera može se videti stanje Ripsovog Complexa (levo) za svako epsilon.
