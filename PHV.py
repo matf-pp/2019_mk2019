@@ -6,6 +6,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import *
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+from matplotlib.pyplot import Circle
 from persistence import *
 import qdarkstyle
 import numpy as np
@@ -117,9 +118,6 @@ class PlotCanvas(FigureCanvas):
         self.ax.set_xlim([0, 1])
         self.ax.set_ylim([0, 1])
 
-
-        triangleIntersectionArray = constructTriangleArray(drawingData.triangles)
-
         multiPoligon = constructTriangleArray(drawingData.triangles)
 
         # plot triangles
@@ -136,13 +134,12 @@ class PlotCanvas(FigureCanvas):
             if((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1) <= drawingData.epsilon*drawingData.epsilon):
                 self.ax.plot([x1, x2], [y1, y2], "black")
 
-        # plot dots
+        # plot dots and circles
         for dot in self.data.dots:
             self.ax.plot([dot[0]], [dot[1]], 'bo')
+            self.ax.add_artist(Circle((dot[0], dot[1]), drawingData.epsilon / 2, color='orange', fill=False, linewidth=3))
 
         self.epsilon_line.remove()
-
-
 
         lines = self.ay.plot([drawingData.epsilon, drawingData.epsilon], [0, self.num], "black")
 
@@ -253,7 +250,6 @@ class Window(QWidget):
 
             self.canvas.plot()
 
-            # gui postavi broj tacaka, slider ...
         except IOError:
             pass
 
@@ -349,8 +345,7 @@ def main():
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
     clock = Window()
-    clock.show()
-    #clock.showFullScreen()
+    clock.showMaximized()
     sys.exit(app.exec_())
 
 

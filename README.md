@@ -1,11 +1,14 @@
-# 2D Persistent Homology visualizer
+#  Persistent Homology visualizer
+
+Persistentna homologija je algebarski metod za uočavanje topoloških osobina podataka. Neke od topoloških osobina koje se mogu prepoznati
+korišćenjem persistentne homologije su: komponentne povezanosti, rupe, klasteri, struktura grafa, dok podaci mogu biti skup tačaka sa metrikom.
+
 
 ![persistence](screenshots/2.png)
 ![persistence](screenshots/3.png)
 
-Na levom plotu korisnik klikom miša postavlja tačke. Program za postavljenje tačke izračunava perzistentnu homologiju apstraktnog Ripsovog kompleksa paramterizovanog distancom epsilon koje se može promeniti preko slajdera na vrhu prozora.
-
-Sa leve strane prikazan je Viretoris-Rips complex koji se dobija za zadati parametar epsilon.
+Na levom plotu korisnik klikom miša postavlja tačke. Program za postavljenje tačke izračunava perzistentnu homologiju. 
+Prevlačenjem epsilon slajdera može se videti stanje Ripsovog Complexa (levo) za svako epsilon.
 
 Sa desne strane prikazan je generisan Barcode koje predstavlja diagram perzistencije gde je za svako epislon prikazan trenutak 'rađanja' i 'umiranja' komponente.
 
