@@ -31,6 +31,7 @@ class DrawingData:
         self.max_distance = 1.42
 
         self.drawH2 = False
+        self.showCircles = False
 
     def recalculateDrawingData(self):
         '''
@@ -137,7 +138,11 @@ class PlotCanvas(FigureCanvas):
         # plot dots and circles
         for dot in self.data.dots:
             self.ax.plot([dot[0]], [dot[1]], 'bo')
-            self.ax.add_artist(Circle((dot[0], dot[1]), drawingData.epsilon / 2, color='orange', fill=False, linewidth=3))
+
+        # plot circles
+        if drawingData.showCircles:
+            for dot in self.data.dots:
+                self.ax.add_artist(Circle((dot[0], dot[1]), drawingData.epsilon / 2, color='orange', fill=False, linewidth=3))
 
         self.epsilon_line.remove()
 
@@ -273,6 +278,10 @@ class Window(QWidget):
             self.canvas.barCode()
             self.canvas.plot()
 
+    def changeShowCircles(self):
+        drawingData.showCircles = self.ShowCirclesCheckBox.isChecked()
+
+        self.canvas.plot()
 
     def __init__(self, parent=None):
         '''
@@ -300,6 +309,8 @@ class Window(QWidget):
 
         self.DarkThemeCheckBox = QCheckBox("Come to the dark side")
         self.H2CheckBox = QCheckBox("Show H2")
+        self.ShowCirclesCheckBox = QCheckBox("Show Circles")
+
 
         self.Button = QPushButton("Open file")
         self.Button.clicked.connect(self.onLoadFileButtonClick)
@@ -320,6 +331,8 @@ class Window(QWidget):
 
         self.DarkThemeCheckBox.stateChanged.connect(self.changeTheme)
         self.H2CheckBox.stateChanged.connect(self.changeH2)
+        self.ShowCirclesCheckBox.stateChanged.connect(self.changeShowCircles)
+
         self.Labela = QLabel("Kristina Popović & Marko Spasić, 2019")
         grid.setContentsMargins(8, 8, 8, 8)
 
@@ -330,10 +343,11 @@ class Window(QWidget):
         grid.addWidget(self.Button, 0,3)
         grid.addWidget(self.DeleteDotsButton, 0,4)
         grid.addWidget(self.H2CheckBox,0,5)
-        grid.addWidget(self.canvas, 1, 0, 1,6)
+        grid.addWidget(self.canvas, 1, 0, 1,7)
+        grid.addWidget(self.ShowCirclesCheckBox, 0,6)
         
         grid.addWidget(self.Labela,2,0)
-        grid.addWidget(self.DarkThemeCheckBox, 2, 5)
+        grid.addWidget(self.DarkThemeCheckBox, 2, 6)
         
         self.setLayout(grid)
         self.setWindowTitle("Persistent homology")
