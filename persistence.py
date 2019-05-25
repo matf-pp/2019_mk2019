@@ -2,15 +2,6 @@
 import numpy as np
 import dionysus as d
 
-
-def list_of_pairs_to_numpyarray(list):
-    '''
-    Helper method used to convert list of (x,y) into numpy.array
-    :param list:
-    :return: numpy.array((n,2))
-    '''
-    return np.array([[x,y] for (x,y) in list])
-
 class VietorisRipsComplex:
 
     def __init__(self, points, k_skeleton = 2):
