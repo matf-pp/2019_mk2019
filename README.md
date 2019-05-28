@@ -4,8 +4,8 @@ Persistentna homologija je algebarski metod za uočavanje topoloških osobina po
 korišćenjem persistentne homologije su: komponentne povezanosti, rupe, klasteri, struktura grafa, dok podaci mogu biti skup tačaka sa metrikom.
 
 
-![persistence](screenshots/2.png)
-![persistence](screenshots/3.png)
+![persistence](screenshots/4.png)
+![persistence](screenshots/5.png)
 
 Na levom plotu korisnik klikom miša postavlja tačke. Program za postavljenje tačke izračunava perzistentnu homologiju. 
 Prevlačenjem epsilon slajdera može se videti stanje Ripsovog Complexa (levo) za svako epsilon.
@@ -33,13 +33,16 @@ Instalirati python3:
 
 `sudo apt-get install python3 python3-pip`
 
-Biblioteka dionysus koristi C++ biblioteku boost. Instalirati boost pokretanjem:
+Biblioteka dionysus koristi C++ biblioteku boost i cmake build sistem. Instalirati boost i cmake pokretanjem:
 
-`sudo apt-get install libboost-all-dev`
+`sudo apt-get install libboost-all-dev cmake`
 
 Zatim instalirati potrebne python pakete pokretanjem:
 
 `pip3 install shapely PyQt5 matplotlib dionysus qdarkstyle`
+
+Skinuti projekat kao zip fajl dirketno sa https://github.com/spaske00/mk2019/archive/master.zip ili klonirati repozitorijum.
+
 
 ### Pokretanje:
 
@@ -48,13 +51,8 @@ Kao python script:
 
 `cd project/folder`
 
-`python PHV.py`
+`python3 PHV.py`
 
-Kao izvršivi fajl:
-
-`cd project/folder/release`
-
-`./PHVlin`
 
 ### Autori:
 Kristina Popović (mi16058@alas.math.rs)
