@@ -242,6 +242,7 @@ class Window(QWidget):
             app.setStyleSheet('')
 
     def onLoadFileButtonClick(self):
+        # np.savetxt('1.csv', drawingData.dots, delimiter=',')
         try:
             file = QFileDialog.getOpenFileName(self, 'Open file', os.curdir," (*.csv )")
             drawingData.dots = np.loadtxt(fname = file[0], delimiter=',', dtype=np.float)
@@ -250,6 +251,9 @@ class Window(QWidget):
             vrc = VietorisRipsComplex(drawingData.dots)
             
             drawingData.diagrams = vrc.compute_persistence(drawingData.max_distance)
+            
+            drawingData.epsilon = 0
+            self.sliderEpsilon.setValue(0)
 
             self.canvas.setDrawingData(drawingData)
 
